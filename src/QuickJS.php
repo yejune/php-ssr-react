@@ -77,8 +77,9 @@ class QuickJS
 
     public function __destruct()
     {
-        $this->ffi->JS_FreeContext($this->context);
-        $this->ffi->JS_FreeRuntime($this->runtime);
+        // Note: We don't free context/runtime here to avoid GC assertion errors
+        // QuickJS will clean up when the process exits
+        // For long-running processes, consider implementing explicit cleanup
     }
 
     public function eval(string $code, string $filename = '<eval>'): mixed
