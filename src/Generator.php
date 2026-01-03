@@ -457,10 +457,16 @@ class Generator
         $content .= "\n";
 
         // Generate route type
+        $content .= "export interface LoaderConfig {\n";
+        $content .= "  endpoint: string;\n";
+        $content .= "  dataKey: string;\n";
+        $content .= "}\n\n";
+
         $content .= "export interface RouteConfig {\n";
         $content .= "  path: string;\n";
         $content .= "  component: React.ComponentType<any>;\n";
         $content .= "  title: string;\n";
+        $content .= "  loaders?: Record<string, LoaderConfig>;\n";
         $content .= "}\n\n";
 
         // Generate routes array
@@ -471,11 +477,75 @@ class Generator
             }
 
             $componentName = $this->getComponentName($route['module'], $route['page']);
-            $content .= "  { path: '{$route['path']}', component: {$componentName}, title: '{$route['title']}' },\n";
+            $loadersStr = $this->generateLoadersObject($route);
+
+            if ($loadersStr) {
+                $content .= "  { path: '{$route['path']}', component: {$componentName}, title: '{$route['title']}', loaders: {$loadersStr} },\n";
+            } else {
+                $content .= "  { path: '{$route['path']}', component: {$componentName}, title: '{$route['title']}' },\n";
+            }
         }
         $content .= "];\n";
 
         $this->writeFile($this->outputDir . '/routes.generated.tsx', $content);
+    }
+
+    /**
+     * Generate loaders object string for a route
+     * Converts Loader('BoardList') → { endpoint: '/api/board/list', dataKey: 'posts' }
+     */
+    private function generateLoadersObject(array $route): ?string
+    {
+        if (empty($route['loaders'])) {
+            return null;
+        }
+
+        $loaderEntries = [];
+        foreach ($route['loaders'] as $propName => $loader) {
+            $endpoint = $this->loaderToEndpoint($loader['method'], $loader['args'], $route['path']);
+            $loaderEntries[] = "{$propName}: { endpoint: '{$endpoint}', dataKey: '{$propName}' }";
+        }
+
+        return '{ ' . implode(', ', $loaderEntries) . ' }';
+    }
+
+    /**
+     * Convert Loader method name to API endpoint
+     * BoardList → /api/board/list
+     * BoardGet + ['id'] → /api/board?id=:id
+     * HomeStats → /api/home/stats
+     */
+    private function loaderToEndpoint(string $method, array $args, string $routePath): string
+    {
+        // Split by uppercase: BoardList → ['Board', 'List']
+        preg_match_all('/[A-Z][a-z]*/', $method, $matches);
+        $parts = $matches[0];
+
+        if (count($parts) < 2) {
+            return '/api/' . strtolower($method);
+        }
+
+        $module = strtolower($parts[0]);
+        $action = strtolower(implode('-', array_slice($parts, 1)));
+
+        // Build base endpoint
+        if ($action === 'get') {
+            $endpoint = "/api/{$module}";
+        } else {
+            $endpoint = "/api/{$module}/{$action}";
+        }
+
+        // Add query params from route path (e.g., :id)
+        if (!empty($args)) {
+            $queryParams = [];
+            foreach ($args as $arg) {
+                // Extract param from route path
+                $queryParams[] = "{$arg}=:{$arg}";
+            }
+            $endpoint .= '?' . implode('&', $queryParams);
+        }
+
+        return $endpoint;
     }
 
     /**
