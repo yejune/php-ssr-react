@@ -30,16 +30,17 @@ jobs:
       - name: Build QuickJS
         run: |
           cd quickjs
-          VERSION=$(cat VERSION 2>/dev/null || echo "unknown")
-          EXTRA_CFLAGS="-fPIC -DCONFIG_VERSION=\\\"$VERSION\\\""
+          make clean || true
+          CFLAGS="-fPIC" make libquickjs.a
           if [ "${{ matrix.lib_ext }}" = "dylib" ]; then
-            # macOS: 공유 라이브러리 빌드
-            make CFLAGS="$EXTRA_CFLAGS" libquickjs.a
-            clang -shared -o libquickjs.dylib -Wl,-all_load libquickjs.a
+            # macOS
+            clang -shared -fPIC -o libquickjs.dylib \
+              .obj/quickjs.o .obj/dtoa.o .obj/libregexp.o .obj/libunicode.o .obj/cutils.o .obj/quickjs-libc.o
           else
-            # Linux: 공유 라이브러리 빌드
-            make CFLAGS="$EXTRA_CFLAGS" libquickjs.a
-            gcc -shared -o libquickjs.so -Wl,--whole-archive libquickjs.a -Wl,--no-whole-archive -lm -ldl -lpthread
+            # Linux
+            gcc -shared -fPIC -o libquickjs.so \
+              .obj/quickjs.o .obj/dtoa.o .obj/libregexp.o .obj/libunicode.o .obj/cutils.o .obj/quickjs-libc.o \
+              -lm -ldl -lpthread
           fi
 
       - name: Package
