@@ -30,13 +30,15 @@ jobs:
       - name: Build QuickJS
         run: |
           cd quickjs
+          VERSION=$(cat VERSION 2>/dev/null || echo "unknown")
+          EXTRA_CFLAGS="-fPIC -DCONFIG_VERSION=\\\"$VERSION\\\""
           if [ "${{ matrix.lib_ext }}" = "dylib" ]; then
             # macOS: 공유 라이브러리 빌드
-            make CFLAGS="-fPIC" libquickjs.a
+            make CFLAGS="$EXTRA_CFLAGS" libquickjs.a
             clang -shared -o libquickjs.dylib -Wl,-all_load libquickjs.a
           else
             # Linux: 공유 라이브러리 빌드
-            make CFLAGS="-fPIC" libquickjs.a
+            make CFLAGS="$EXTRA_CFLAGS" libquickjs.a
             gcc -shared -o libquickjs.so -Wl,--whole-archive libquickjs.a -Wl,--no-whole-archive -lm -ldl -lpthread
           fi
 
