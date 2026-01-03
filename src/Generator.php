@@ -470,9 +470,26 @@ class Generator
         $content .= "  loaders?: Record<string, LoaderConfig>;\n";
         $content .= "}\n\n";
 
+        // 라우트 정렬: 더 구체적인 경로가 먼저 오도록
+        $sortedRoutes = $this->routes;
+        usort($sortedRoutes, function($a, $b) {
+            $aPath = $a['path'];
+            $bPath = $b['path'];
+
+            // 동적 세그먼트(:id) 개수 비교 - 적은 것이 더 구체적
+            $aParams = substr_count($aPath, ':');
+            $bParams = substr_count($bPath, ':');
+            if ($aParams !== $bParams) {
+                return $aParams - $bParams;
+            }
+
+            // 세그먼트 수가 같으면 알파벳 순서
+            return strcmp($bPath, $aPath);
+        });
+
         // Generate routes array
         $content .= "export const routes: RouteConfig[] = [\n";
-        foreach ($this->routes as $route) {
+        foreach ($sortedRoutes as $route) {
             if (!$route['page']) {
                 continue;
             }
@@ -511,9 +528,26 @@ class Generator
         $content .= "  loaders?: Record<string, LoaderConfig>;\n";
         $content .= "}\n\n";
 
+        // 라우트 정렬: 더 구체적인 경로가 먼저 오도록
+        $sortedRoutes = $this->routes;
+        usort($sortedRoutes, function($a, $b) {
+            $aPath = $a['path'];
+            $bPath = $b['path'];
+
+            // 동적 세그먼트(:id) 개수 비교 - 적은 것이 더 구체적
+            $aParams = substr_count($aPath, ':');
+            $bParams = substr_count($bPath, ':');
+            if ($aParams !== $bParams) {
+                return $aParams - $bParams;
+            }
+
+            // 세그먼트 수가 같으면 알파벳 순서
+            return strcmp($bPath, $aPath);
+        });
+
         // Generate routes array (metadata only)
         $content .= "export const routesMeta: RouteMeta[] = [\n";
-        foreach ($this->routes as $route) {
+        foreach ($sortedRoutes as $route) {
             if (!$route['page']) {
                 continue;
             }
