@@ -65,13 +65,11 @@ $html = $engine->render('App', ['title' => 'Hello']);
 
 ## 지원 플랫폼
 
-| 플랫폼 | 아키텍처 | 상태 |
-|--------|----------|------|
-| macOS | arm64 (Apple Silicon) | ✅ |
-| macOS | x64 (Intel) | ✅ |
-| Linux | x64 | ✅ |
-| Linux | arm64 | ✅ |
-| Windows | x64 | 🚧 (예정) |
+| 플랫폼 | 아키텍처 |
+|--------|----------|
+| macOS | arm64 (Apple Silicon) |
+| Linux | x64 |
+| Linux | arm64 |
 
 ## 라이선스
 
