@@ -31,7 +31,7 @@ jobs:
         run: |
           cd quickjs
           make clean || true
-          CFLAGS="-fPIC" make libquickjs.a
+          CFLAGS="-fPIC -D_GNU_SOURCE" make libquickjs.a
           if [ "${{ matrix.lib_ext }}" = "dylib" ]; then
             # macOS
             clang -shared -fPIC -o libquickjs.dylib \
@@ -58,6 +58,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
 
     steps:
       - name: Download all artifacts
