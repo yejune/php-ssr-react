@@ -68,6 +68,7 @@ $html = $engine->render('App', ['title' => 'Hello']);
 | 플랫폼 | 아키텍처 |
 |--------|----------|
 | macOS | arm64 (Apple Silicon) |
+| macOS | x64 (Intel) |
 | Linux | x64 |
 | Linux | arm64 |
 
