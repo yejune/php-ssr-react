@@ -18,13 +18,63 @@ namespace PhpSsrReact;
  */
 class Router
 {
-    private object $app;
+    private ?object $app = null;
     private array $routes = [];
+    private array $controllers = [];
 
-    public function __construct(object $app)
+    public function __construct(?object $app = null)
     {
         $this->app = $app;
-        $this->buildRoutes();
+        if ($app) {
+            $this->buildRoutes();
+        }
+    }
+
+    /**
+     * Register a controller for a module
+     */
+    public function registerController(string $prefix, object $controller): void
+    {
+        $this->controllers[$prefix] = $controller;
+        $this->buildControllerRoutes($prefix, $controller);
+    }
+
+    /**
+     * Build routes from a controller
+     */
+    private function buildControllerRoutes(string $prefix, object $controller): void
+    {
+        $reflection = new \ReflectionClass($controller);
+        $methods = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+        foreach ($methods as $method) {
+            $name = $method->getName();
+            if (str_starts_with($name, '__')) {
+                continue;
+            }
+
+            $httpMethod = $this->determineHttpMethod($name);
+            $path = "/api/$prefix/$name";
+
+            $this->routes[$path] = [
+                'method' => $httpMethod,
+                'controller' => $prefix,
+                'handler' => $name,
+                'params' => $this->getMethodParams($method),
+            ];
+        }
+    }
+
+    /**
+     * Determine HTTP method from action name
+     */
+    private function determineHttpMethod(string $action): string
+    {
+        return match ($action) {
+            'get', 'list', 'index', 'check', 'search', 'find', 'stats' => 'GET',
+            'save', 'create', 'update', 'delete', 'cancel', 'store', 'destroy' => 'POST',
+            default => 'GET',
+        };
     }
 
     /**
@@ -179,8 +229,13 @@ class Router
         $params = $route['params'];
         $args = [];
 
+        // Get the target object (controller or app)
+        $target = isset($route['controller'])
+            ? $this->controllers[$route['controller']]
+            : $this->app;
+
         if (empty($params)) {
-            return $this->app->$handler();
+            return $target->$handler();
         }
 
         // Get input data
@@ -209,7 +264,7 @@ class Router
             }
         }
 
-        return $this->app->$handler(...$args);
+        return $target->$handler(...$args);
     }
 
     /**
