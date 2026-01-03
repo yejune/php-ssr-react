@@ -1,0 +1,68 @@
+name: Build QuickJS
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-14
+            platform: darwin-arm64
+            lib_ext: dylib
+          - os: macos-13
+            platform: darwin-x64
+            lib_ext: dylib
+          - os: ubuntu-latest
+            platform: linux-x64
+            lib_ext: so
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            lib_ext: so
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone QuickJS
+        run: git clone --depth 1 https://github.com/bellard/quickjs quickjs
+
+      - name: Build QuickJS
+        run: |
+          cd quickjs
+          make libquickjs.${{ matrix.lib_ext }}
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp quickjs/libquickjs.${{ matrix.lib_ext }} dist/libquickjs-${{ matrix.platform }}.${{ matrix.lib_ext }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libquickjs-${{ matrix.platform }}
+          path: dist/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
