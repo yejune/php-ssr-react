@@ -37,12 +37,7 @@ case "$OS" in
 esac
 
 LIB_FILE="$BUILD_DIR/libquickjs.$EXT"
-
-# Check if already exists
-if [ -f "$LIB_FILE" ]; then
-    echo "QuickJS already exists: $LIB_FILE"
-    exit 0
-fi
+VERSION_FILE="$BUILD_DIR/.version"
 
 # Get release URL
 if [ "$VERSION" = "latest" ]; then
@@ -53,9 +48,22 @@ fi
 
 echo "Fetching release info..."
 
+# Get release info
+RELEASE_INFO=$(curl -s "$API_URL")
+RELEASE_TAG=$(echo "$RELEASE_INFO" | grep '"tag_name"' | cut -d '"' -f 4)
+
+# Check if already up to date
+if [ -f "$LIB_FILE" ] && [ -f "$VERSION_FILE" ]; then
+    LOCAL_VERSION=$(cat "$VERSION_FILE")
+    if [ "$LOCAL_VERSION" = "$RELEASE_TAG" ]; then
+        echo "QuickJS already up to date: $RELEASE_TAG"
+        exit 0
+    fi
+fi
+
 # Get download URL
 ASSET_NAME="libquickjs-$PLATFORM.$EXT"
-DOWNLOAD_URL=$(curl -s "$API_URL" | grep "browser_download_url.*$ASSET_NAME" | cut -d '"' -f 4)
+DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep "browser_download_url.*$ASSET_NAME" | cut -d '"' -f 4)
 
 if [ -z "$DOWNLOAD_URL" ]; then
     echo "No pre-built binary for $PLATFORM"
@@ -69,5 +77,6 @@ echo "Downloading: $DOWNLOAD_URL"
 mkdir -p "$BUILD_DIR"
 curl -L -o "$LIB_FILE" "$DOWNLOAD_URL"
 chmod 755 "$LIB_FILE"
+echo "$RELEASE_TAG" > "$VERSION_FILE"
 
-echo "Downloaded: $LIB_FILE"
+echo "Downloaded: $LIB_FILE ($RELEASE_TAG)"
