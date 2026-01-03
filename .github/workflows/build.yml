@@ -15,7 +15,7 @@ jobs:
           - os: macos-latest
             platform: darwin-arm64
             lib_ext: dylib
-          - os: macos-15-large
+          - os: macos-15-intel
             platform: darwin-x64
             lib_ext: dylib
           - os: ubuntu-latest
