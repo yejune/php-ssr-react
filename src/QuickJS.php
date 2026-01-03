@@ -61,7 +61,10 @@ class QuickJS
 
     public function __construct(?string $libPath = null)
     {
-        $libPath = $libPath ?? __DIR__ . '/../quickjs-src/libquickjs.dylib';
+        if ($libPath === null) {
+            $ext = PHP_OS_FAMILY === 'Darwin' ? 'dylib' : 'so';
+            $libPath = __DIR__ . "/../build/libquickjs.$ext";
+        }
 
         if (!file_exists($libPath)) {
             throw new \RuntimeException("QuickJS library not found at: $libPath");
